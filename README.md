@@ -10,4 +10,4 @@ Usage:
 
 
 
-3. It's a very simple and many bugs project!!
+3. It's a very simple and has many bugs project!!
