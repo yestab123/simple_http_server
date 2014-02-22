@@ -1,0 +1,6 @@
+static int p_to_p[2];
+static pthread_mutex_t p_lock=PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t clean_lock=PTHREAD_MUTEX_INITIALIZER;
+static int fd_clean[2];
+#define PATH_MAX 300
+char DEFAULT_PATH[]={"/Project/web"};
