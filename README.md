@@ -11,3 +11,8 @@ Usage:
 
 
 3. It's a very simple and has many bugs project!!
+
+
+/tool/   used to test whether the server is working properly
+/test/   used to test the feasibility of technology
+/web/    the DIR of web page.
