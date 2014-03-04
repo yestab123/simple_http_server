@@ -13,6 +13,9 @@
 
 #define OK 0
 #define MAXEVENTS 10000
+#define MAXSIZE 500
+
+#include "main.h"
 #include "thread.c"
 
 void set_non_block(int fd){
