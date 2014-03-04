@@ -1,6 +1,6 @@
 struct ser_status{
   int connect_count;
-  double rate;
+  float rate;
 };
 
 struct ser_status status;
@@ -39,14 +39,25 @@ struct connect_status {
   //struct data_cache *cache;
   int send_size;
   int send_done;
+
+  struct stat file_stat;
+  char file_type[20];
 };
 
+#define PTHREAD_NUM 4
 struct connect_status cli[20000];
+int sockfd;
 
 
 pthread_mutex_t  accept_lock;
 
 #define HOME_DIR "/Project/web/"
+#define ERR_404_PAGE "/Project/web/404.html"
+#define DEFAULT_PAGE "/index.html"
+
+#define HTTP_SERVER_VERSION "HTTP/1.1"
+
+
 
 #define POINT_U 1
 #define BUFFER_U 2
@@ -64,3 +75,6 @@ pthread_mutex_t  accept_lock;
 #define METHOD_GET 1
 #define METHOD_POST 2
 #define METHOD_HEAD 3
+
+
+#define DEBUG_T 1

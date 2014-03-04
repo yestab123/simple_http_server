@@ -1,10 +1,4 @@
-int thread_init(int num){
-  int i;
-  for(i=0;i<num;i++){
-    pthread_t * p;
-    pthread_create(p,NULL,thread_process,NULL);
-  }
-}
+
 
 void * thread_process(void *arg){
   int thread_count=0;
@@ -12,11 +6,16 @@ void * thread_process(void *arg){
   int i;
   int e_fd;
   int count;
-  int time_out=2000;//ms
+  int time_out=5000;//ms
   struct epoll_event EVENTS[MAXEVENTS];
-
+  float rate_t=0.1;
+#if DEBUG_T
+  printf("thread_work\n");
+#endif
+  e_fd=epoll_create(10);
+  set_non_block(e_fd);
   while(1){
-   if((double)((thread_count*1.0)/(status.connect_count * 1.0)) < (status.rate))
+   if(rate_t < (status.rate))
     {
       if(1!=accept_keep)
 	{
@@ -24,14 +23,17 @@ void * thread_process(void *arg){
 	  if(i==0){
 	    accept_keep=1;
 	    epoll_add(e_fd,sockfd);
+#if DEBUG_T
+	    printf("#Get lock#\n");
+#endif
 	  }
 	}
     }
-   else{
-     epoll_del(e_fd,sockfd);
-     pthread_mutex_unlock(&accept_lock);
-     accept_keep=0;
-   }
+   else if(1==accept_keep){
+	epoll_del(e_fd,sockfd);
+	pthread_mutex_unlock(&accept_lock);
+	accept_keep=0;
+      }
 
    if((0==thread_count)&&(0==accept_keep))
      {
@@ -47,19 +49,36 @@ void * thread_process(void *arg){
      if(1==accept_keep){
        if(fd==sockfd){
 	 int connfd=accept(sockfd,NULL,NULL);
-	 set_non_blocking(connfd);
+	 set_non_block(connfd);
 	 epoll_add(e_fd,connfd);
 	 thread_count++;
 	 status.connect_count++;
+	 connect_init(fd,&cli[connfd]);
+	 cli[connfd].phase=ACCEPT_DATA_PHASE;
+	 continue;
        }
      }
-     else if(EVENTS[i].events & EPOLLIN){
+     if(EVENTS[i].events & EPOLLIN){
        int work_fd=EVENTS[i].data.fd;
-       process(work_fd);
+       if(cli[work_fd].phase==ACCEPT_DATA_PHASE){
+	 recv_data(work_fd,&cli[work_fd]);
+	 process(work_fd,&cli[work_fd]);
+	 method_process(work_fd,&cli[work_fd]);
+	 get_process(work_fd,&cli[work_fd]);
+	 file_type_process(work_fd,&cli[work_fd]);
+	 pack_process(work_fd,&cli[work_fd]);
+	 
+	 cli[work_fd].phase==WAIT_SEND_PHASE;
+       }
      }
 
      else if(EVENTS[i].events & EPOLLOUT){
+       int work_fd;
        work_fd=EVENTS[i].data.fd;
+       if(cli[work_fd].phase==WAIT_SEND_PHASE){
+	 send_data(work_fd,&cli[work_fd]);
+	 cli[work_fd].phase=DONE_PHASE;
+       }
      }
    }
 
@@ -68,4 +87,15 @@ void * thread_process(void *arg){
 }
 
 
- 
+void thread_init(int num){
+  int i;
+  int s;
+  for(i=0;i<num;i++){
+    pthread_t t;
+    s=pthread_create(&t,NULL,thread_process,NULL);
+    if(s!=0){
+      printf("##create thread ERROR\n");
+    }
+  }
+}
+

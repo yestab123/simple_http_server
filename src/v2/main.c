@@ -9,13 +9,18 @@
 #include <unistd.h>
 #include <assert.h>
 #include <pthread.h>
-
+#include <strings.h>
+#include <error.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #define OK 0
 #define MAXEVENTS 10000
-#define MAXSIZE 500
+#define MAXSIZE 1000
 
+#include "file.h"
 #include "main.h"
+#include "process.c"
 #include "thread.c"
 
 void set_non_block(int fd){
@@ -66,12 +71,26 @@ int main(int argc,char **argv){
   int sock;
   sock=socket(AF_INET,SOCK_STREAM,0);
   int i;
-  i=bind(sock,(struct sockaddr)&ser,sizeof(ser));
+  i=bind(sock,(struct sockaddr*)&ser,sizeof(ser));
   if(i!=0){
     printf("##bind err##\n");
     exit(0);
   }
-
+  //  sleep(15);
   set_non_block(sock);
 
+  status.connect_count=0;
+  status.rate=0.5;
+  
+  
   listen(sock,10);
+  sockfd=sock;
+#if DEBUG_T
+  printf("Init Test\n");
+#endif
+  thread_init(PTHREAD_NUM);
+#if DEBUG_T
+  printf("thread init DONE\n");
+#endif
+  while(1){}
+}
