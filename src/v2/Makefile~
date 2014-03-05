@@ -1,0 +1,6 @@
+server:main.o process.o thread.o
+	gcc -o server main.c -lpthread
+
+
+clean:
+	rm process.o main.o thread.o
