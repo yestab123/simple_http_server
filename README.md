@@ -1,11 +1,11 @@
 a mini http server.
 
 Usage:
-1. Download the code and run " gcc -o service service_main.c " in the dir.
+1. cd src/v1 or cd src/v2  (src/v1 version1,and the update src/v2)
 
+1.2 make
 
-
-2. ./service 127.0.0.1 80 (You can change the IP and the PORT you self).
+2. ./service 127.0.0.1 80 (You can change the IP and the PORT you want)
 
 
 
