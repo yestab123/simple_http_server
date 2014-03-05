@@ -81,8 +81,13 @@ void * thread_process(void *arg){
        int work_fd;
        work_fd=EVENTS[i].data.fd;
        if(cli[work_fd].phase==WAIT_SEND_PHASE){
-	 send_data(work_fd,&cli[work_fd]);
+	 int i=send_process(work_fd,&cli[work_fd]);
+	 if(i==-1){
+	   e_del(e_fd,work_fd);
+	 }
+	 else{
 	 cli[work_fd].phase=DONE_PHASE;
+	 }
        }
      }
    }

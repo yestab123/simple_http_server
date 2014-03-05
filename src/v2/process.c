@@ -45,20 +45,56 @@ int recv_data(int fd,struct connect_status *cli){
   //printf("recv_data() DONE\n");
 }
 
-int send_data(int fd,struct connect_status *cli){
-  int i=0;
-  while((cli->send_size - cli->send_done) != 0){
-    i=send(fd,(cli->send + cli->send_done),(cli->send_size - cli->send_done),MSG_NOSIGNAL);
-    if(-1 == i){
-      if(errno==EPIPE){
-	return CLOSE;
-      }
-      else
-	return -1;
+
+
+
+int send_data(int fd,char * buf,int size){
+  int i;
+  i=send(fd,buf,size,MSG_NOSIGNAL);
+  if(i<0){
+    if(errno==EPIPE){
+      close(fd);
+      return -10;
     }
-    cli->send_done += i;
+    else if(errno==EAGAIN){
+      printf("send buffer full!!\n");
+      sleep(5);
+    }
   }
-  return OK;
+  else{
+    return -1;
+  }
+  return i;
+}
+
+int send_process(int fd,struct connect_status *cli){
+  int i;
+  sprintf(cli->send,"%s\r\n",cli->send);
+  i=send_data(fd,cli->send,strlen(cli->send));
+  if(i==-10){
+    cli->phase=CLOSE_PHASE;
+    return -1;
+  }
+  if(0!=(cli->file_stat.st_size)){
+    int file_fd=open(cli->file_path,O_RDONLY);
+    char *file_buf;
+    file_buf=mmap(NULL,cli->file_stat.st_size,PROT_READ,MAP_PRIVATE,file_fd,0);
+    if(file_buf==MAP_FAILED){
+      printf("mmap ERROR\n");
+      return -1;
+    }
+    i=send_data(fd,file_buf,cli->file_stat.st_size);
+    if(i==-10){
+      cli->phase=CLOSE_PHASE;
+      return -1;
+    }
+  }
+  i=send_data(fd,"\r\n\r\n",strlen("\r\n\r\n"));
+  if(i==-10){
+    cli->phase=CLOSE_PHASE;
+    return -1;
+  }
+  
 }
 
 int process(int fd,struct connect_status *cli){

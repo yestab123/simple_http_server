@@ -72,6 +72,7 @@ pthread_mutex_t  accept_lock;
 #define DATA_PROCESS_PHASE 3
 #define WAIT_SEND_PHASE 4
 #define DONE_PHASE 5
+#define CLOSE_PHASE -1;
 
 
 #define METHOD_GET 1
