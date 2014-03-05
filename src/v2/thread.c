@@ -62,6 +62,11 @@ void * thread_process(void *arg){
        int work_fd=EVENTS[i].data.fd;
        if(cli[work_fd].phase==ACCEPT_DATA_PHASE){
 	 recv_data(work_fd,&cli[work_fd]);
+	 if(cli[work_fd].buffer_size!=0){
+	   cli[work_fd].phase=DATA_PROCESS_PHASE;
+       }
+       }
+	 if(cli[work_fd].phase==DATA_PROCESS_PHASE){
 	 process(work_fd,&cli[work_fd]);
 	 method_process(work_fd,&cli[work_fd]);
 	 get_process(work_fd,&cli[work_fd]);

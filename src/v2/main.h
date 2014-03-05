@@ -42,6 +42,8 @@ struct connect_status {
 
   struct stat file_stat;
   char file_type[20];
+
+  char file_path[50];
 };
 
 #define PTHREAD_NUM 4

@@ -89,15 +89,20 @@ int process(int fd,struct connect_status *cli){
     if(out==1)
       break;
   }
+#if DEBUG_T
+  printf("Method:%s\nPath:%s\nVersion:%s\n",cli->rpc.method,cli->rpc.path,cli->rpc.version);
+#endif
 
 }
 
 
 int method_process(int fd,struct connect_status *cli){
   int i;
+#if DEBUG_T
+  printf("method_process\n");
+#endif
   if((i=strcmp(cli->rpc.method,"GET"))==0){
     cli->rpc.method_i=METHOD_GET;
-    get_process(fd,cli);
   }
   else if((i=strcmp(cli->rpc.method,"HEAD"))==0){
     cli->rpc.method_i=METHOD_HEAD;
@@ -112,21 +117,28 @@ int method_process(int fd,struct connect_status *cli){
 
 
 int get_process(int fd,struct connect_status *cli){
-  sprintf(cli->rpc.path,"%s%s",HOME_DIR,cli->rpc.path);
+#if DEBUG_T
+  printf("get_process()\n");
+#endif
+  sprintf(cli->file_path,"%s%s\0",HOME_DIR,cli->rpc.path);
   int i;
-  i=stat(cli->rpc.path,&(cli->file_stat));
-  if(-1==i){
+  i=stat(cli->file_path,&(cli->file_stat));
+  if(i!=0){
+    printf("#%s doesn't exist!!\n",cli->file_path);
     ERR_PAGE_SET(404,cli);
  }
   else{
     if(S_ISDIR(cli->file_stat.st_mode)){
-      sprintf(cli->rpc.path,"%s%s",cli->rpc.path,DEFAULT_PAGE);
-      i=stat(cli->rpc.path,&(cli->file_stat));
-      if(-1==i){
+      sprintf(cli->file_path,"%s%s\0",cli->file_path,DEFAULT_PAGE);
+      i=stat(cli->file_path,&(cli->file_stat));
+      if(i!=0){
+	printf("SECOND:%s doesn't exist\n\n",cli->file_path);
 	ERR_PAGE_SET(404,cli);
       }
+      cli->status=200;
     }
     else if(S_ISREG(cli->file_stat.st_mode)){
+      cli->status=200;
       return OK;}
   }
 }
@@ -134,9 +146,9 @@ int get_process(int fd,struct connect_status *cli){
 
 int ERR_PAGE_SET(int ERR,struct connect_status *cli){
   if(404==ERR){
-    sprintf(cli->rpc.path,"%s",ERR_404_PAGE);
+    sprintf(cli->file_path,"%s",ERR_404_PAGE);
     cli->status=404;
-    stat(cli->rpc.path,&(cli->file_stat));
+    stat(cli->file_path,&(cli->file_stat));
   }
 }
 
@@ -144,21 +156,30 @@ int file_type_process(int fd,struct connect_status *cli){
   char *word;
   int i;
   int j;
-  word=strrchr(cli->rpc.path,'.');
+  printf("file_type_process:%s\n",cli->file_path);
+  word=strrchr(cli->file_path,'.');
   if(word==NULL){
+    printf("word is NULL\n");
     sprintf(cli->file_type,"%s","text/plain");
   }else{
     word++;
+    printf("word:%s\n",word);
     if((i=strcasecmp(word,"jpg"))==0){
       sprintf(cli->file_type,"%s","image/jpeg");
     }
     else if((i=strcasecmp(word,"htm"))==0){
+	sprintf(cli->file_type,"%s","text/html");
+      }
+    else if((i=strcasecmp(word,"html"))==0){
       sprintf(cli->file_type,"%s","text/html");
     }
     else{
       sprintf(cli->file_type,"%s","text/plain");
     }
   }
+#if DEBUG_T
+  printf("file_type:%s\n",cli->file_type);
+#endif
 }
 
 int pack_process(int fd,struct connect_status *cli){
@@ -172,4 +193,9 @@ int pack_process(int fd,struct connect_status *cli){
     break;
   }
   sprintf(cli->send,"%s%s%s\r\n",cli->send,"Content-Type: ",cli->file_type);
+  sprintf(cli->send,"%s%s%d\r\n",cli->send,"Cotent-Length: ",(int)cli->file_stat.st_size);
+
+#if DEBUG_T
+  printf("\n\n###\n%s\n\n",cli->send);
+#endif
 }
