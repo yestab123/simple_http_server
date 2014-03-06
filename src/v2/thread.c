@@ -6,7 +6,7 @@ void * thread_process(void *arg){
   int i;
   int e_fd;
   int count;
-  int time_out=5000;//ms
+  int time_out=-1;//ms
   struct epoll_event EVENTS[MAXEVENTS];
   float rate_t=0.1;
 #if DEBUG_T
@@ -58,22 +58,65 @@ void * thread_process(void *arg){
 	 continue;
        }
      }
-     if(EVENTS[i].events & EPOLLIN){
+     if(EVENTS[i].events & EPOLLRDHUP){
        int work_fd=EVENTS[i].data.fd;
+       epoll_del(e_fd,work_fd);
+       close(work_fd);
+       thread_count--;
+       status.connect_count--;
+       cli[work_fd].phase=CLOSE_PHASE;
+     }
+     else if(EVENTS[i].events & EPOLLIN){
+       int work_fd=EVENTS[i].data.fd;
+       if(cli[work_fd].phase==DONE_PHASE){
+	 connect_init(work_fd,&cli[work_fd]);
+	 cli[work_fd].phase=ACCEPT_DATA_PHASE;
+       }
+
        if(cli[work_fd].phase==ACCEPT_DATA_PHASE){
-	 recv_data(work_fd,&cli[work_fd]);
+	 i=recv_data(work_fd,&cli[work_fd]);
+	 if(i==-1)
+	   {
+	     epoll_del(e_fd,work_fd);
+	     thread_count--;
+	     status.connect_count--;
+	     close(work_fd);
+	     cli[work_fd].phase=CLOSE_PHASE;
+	     continue;
+	   }
 	 if(cli[work_fd].buffer_size!=0){
 	   cli[work_fd].phase=DATA_PROCESS_PHASE;
+	 }
        }
-       }
-	 if(cli[work_fd].phase==DATA_PROCESS_PHASE){
+
+       if(cli[work_fd].phase==DATA_PROCESS_PHASE){
 	 process(work_fd,&cli[work_fd]);
-	 method_process(work_fd,&cli[work_fd]);
+	 i=method_process(work_fd,&cli[work_fd]);
+	 if(i==-1){
+	   epoll_del(e_fd,work_fd);
+	   thread_count--;
+	   status.connect_count--;
+	   close(work_fd);
+	   cli[work_fd].phase=CLOSE_PHASE;
+	 }
 	 get_process(work_fd,&cli[work_fd]);
 	 file_type_process(work_fd,&cli[work_fd]);
 	 pack_process(work_fd,&cli[work_fd]);
 	 
-	 cli[work_fd].phase==WAIT_SEND_PHASE;
+	 cli[work_fd].phase=WAIT_SEND_PHASE;
+	 epoll_mod(e_fd,work_fd,EPOLLIN|EPOLLOUT);
+	 /*
+	 i=send_process(work_fd,&cli[work_fd]);
+
+	 if(i==-1){
+	   thread_count--;
+	   status.connect_count--;
+	   epoll_del(e_fd,work_fd);
+	   close(work_fd);
+	   cli[work_fd].phase=CLOSE_PHASE;
+	   continue;
+	 }
+	 cli[work_fd].phase==DONE_PHASE;*/
        }
      }
 
@@ -83,15 +126,35 @@ void * thread_process(void *arg){
        if(cli[work_fd].phase==WAIT_SEND_PHASE){
 	 int i=send_process(work_fd,&cli[work_fd]);
 	 if(i==-1){
-	   e_del(e_fd,work_fd);
+	   epoll_del(e_fd,work_fd);
+	   close(work_fd);
+	   thread_count--;
+	   status.connect_count--;
+	   cli[work_fd].phase=CLOSE_PHASE;
 	 }
 	 else{
-	 cli[work_fd].phase=DONE_PHASE;
+	   cli[work_fd].phase=DONE_PHASE;
+	   // epoll_mod(e_fd,work_fd,EPOLLIN);
+	   epoll_del(e_fd,work_fd);
+	   close(work_fd);
+	   thread_count--;
+	   status.connect_count--;
+	   cli[work_fd].phase=CLOSE_PHASE;
 	 }
        }
      }
    }
-
+   if(status.connect_count!=0){
+   rate_t=(float)(((float)(thread_count *1.0))/((float)(status.connect_count*1.0)))*1.0;
+   }
+   else{
+     rate_t=0;
+   }
+   if(rate_t<0)
+     {
+       rate_t=0;
+     }
+   // printf("###%f\n\n",rate_t);
   }
 
 }

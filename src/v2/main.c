@@ -13,9 +13,11 @@
 #include <error.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
+
 
 #define OK 0
-#define MAXEVENTS 10000
+#define MAXEVENTS 65535
 #define MAXSIZE 1000
 
 #include "file.h"
@@ -33,7 +35,7 @@ int epoll_add(int e_fd,int fd){
   struct epoll_event event;
   int i;
   event.data.fd=fd;
-  event.events=EPOLLIN | EPOLLOUT | EPOLLET;
+  event.events=EPOLLIN|EPOLLET|EPOLLRDHUP;
   i=epoll_ctl(e_fd,EPOLL_CTL_ADD,fd,&event);
   if(i!=0)
     {
@@ -43,13 +45,22 @@ int epoll_add(int e_fd,int fd){
 }
 
 int epoll_del(int e_fd,int fd){
+  int i;
+  i=epoll_ctl(e_fd,EPOLL_CTL_DEL,fd,0);
+  if(i!=0){
+    printf("epoll_del error #%d\n",e_fd);
+  }
+  return OK;
+}
+
+int epoll_mod(int e_fd,int fd,int ev){
   struct epoll_event event;
   int i;
   event.data.fd=fd;
-  event.events=EPOLLIN|EPOLLET|EPOLLOUT;
-  i=epoll_ctl(e_fd,EPOLL_CTL_DEL,fd,&event);
+  event.events=ev|EPOLLET|EPOLLRDHUP;
+  i=epoll_ctl(e_fd,EPOLL_CTL_MOD,fd,&event);
   if(i!=0){
-    printf("epoll_del error #%d\n",e_fd);
+    printf("epoll_mod error #%d:%d\n",e_fd,fd);
   }
   return OK;
 }

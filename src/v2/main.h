@@ -44,10 +44,12 @@ struct connect_status {
   char file_type[20];
 
   char file_path[50];
+
+  int errno_set;
 };
 
 #define PTHREAD_NUM 4
-struct connect_status cli[20000];
+struct connect_status cli[65535];
 int sockfd;
 
 
@@ -80,4 +82,4 @@ pthread_mutex_t  accept_lock;
 #define METHOD_HEAD 3
 
 
-#define DEBUG_T 1
+//#define DEBUG_T 1

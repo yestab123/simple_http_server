@@ -10,6 +10,10 @@ int connect_init(int fd,struct connect_status *cli){
   memset(cli->send,'\0',MAXSIZE);
   cli->send_size=0;
   cli->send_done=0;
+  memset(&cli->file_stat,'\0',sizeof(struct stat));
+  memset(cli->file_type,'\0',20);
+  memset(cli->file_path,'\0',50);
+  cli->errno_set=0;
   return OK;
 }
 
@@ -26,15 +30,17 @@ int recv_data(int fd,struct connect_status *cli){
 	  break;
 	}
       else{
-	close(fd);
+	//close(fd);
 	recv_data=0;
+	return -1;
 	break;
       }
     }
     else if(i==0)
       {
-	close(fd);
+	//	close(fd);
 	recv_data=0;
+	return -1;
 	break;
       }
     else{
@@ -42,6 +48,7 @@ int recv_data(int fd,struct connect_status *cli){
       //printf("Get data #%d\n",i);
     }
   }
+  return 0;
   //printf("recv_data() DONE\n");
 }
 
@@ -53,16 +60,15 @@ int send_data(int fd,char * buf,int size){
   i=send(fd,buf,size,MSG_NOSIGNAL);
   if(i<0){
     if(errno==EPIPE){
-      close(fd);
       return -10;
-    }
+    }/*
     else if(errno==EAGAIN){
       printf("send buffer full!!\n");
       sleep(5);
+      }*/
+    else{
+      return -10;
     }
-  }
-  else{
-    return -1;
   }
   return i;
 }
@@ -75,25 +81,36 @@ int send_process(int fd,struct connect_status *cli){
     cli->phase=CLOSE_PHASE;
     return -1;
   }
+  if(cli->errno_set==1){
+    return -1;
+  }
   if(0!=(cli->file_stat.st_size)){
     int file_fd=open(cli->file_path,O_RDONLY);
+    if(file_fd==-1){
+      printf("open file error:%s",cli->file_path);
+      return -1;
+    }
     char *file_buf;
     file_buf=mmap(NULL,cli->file_stat.st_size,PROT_READ,MAP_PRIVATE,file_fd,0);
     if(file_buf==MAP_FAILED){
-      printf("mmap ERROR\n");
+      printf("mmap ERROR:::%d\n",errno);
+      close(file_fd);
       return -1;
     }
     i=send_data(fd,file_buf,cli->file_stat.st_size);
+    munmap(file_buf,cli->file_stat.st_size);
+    close(file_fd);
     if(i==-10){
       cli->phase=CLOSE_PHASE;
       return -1;
     }
   }
-  i=send_data(fd,"\r\n\r\n",strlen("\r\n\r\n"));
+  i=send_data(fd,"\r\n\r\n\0",strlen("\r\n\r\n\0"));
   if(i==-10){
     cli->phase=CLOSE_PHASE;
     return -1;
   }
+  return OK;
   
 }
 
@@ -147,8 +164,10 @@ int method_process(int fd,struct connect_status *cli){
     cli->rpc.method_i=METHOD_POST;
   }
   else{
+    return -1;
     printf("#%d,METHOD_PROCESS ERROR",fd);
   }
+  return 0;
 }
 
 
@@ -209,6 +228,19 @@ int file_type_process(int fd,struct connect_status *cli){
     else if((i=strcasecmp(word,"html"))==0){
       sprintf(cli->file_type,"%s","text/html");
     }
+    else if((i=strcasecmp(word,"ico"))==0){
+      sprintf(cli->file_type,"%s","image/x-icon");
+    }
+    /* else if((i=strcasecmp(word,"js"))==0){
+      sprintf(cli->file_type,"%s","application/x-javascript");
+      cli->errno_set=1;
+      }*/
+    else if((i=strcasecmp(word,"gif"))==0){
+      sprintf(cli->file_type,"%s","image/gif");
+    }/*
+    else if((i=strcasecmp(word,"css"))==0){
+      sprintf(cli->file_type,"%s","text/css");
+      }*/
     else{
       sprintf(cli->file_type,"%s","text/plain");
     }
