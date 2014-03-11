@@ -14,11 +14,11 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
+#include <sys/sendfile.h>
 
 #define OK 0
 #define MAXEVENTS 65535
-#define MAXSIZE 1000
+#define MAXSIZE 1500
 
 #include "file.h"
 #include "main.h"
@@ -35,7 +35,7 @@ int epoll_add(int e_fd,int fd){
   struct epoll_event event;
   int i;
   event.data.fd=fd;
-  event.events=EPOLLIN|EPOLLET|EPOLLRDHUP;
+  event.events=EPOLLIN|EPOLLRDHUP;
   i=epoll_ctl(e_fd,EPOLL_CTL_ADD,fd,&event);
   if(i!=0)
     {
@@ -57,7 +57,7 @@ int epoll_mod(int e_fd,int fd,int ev){
   struct epoll_event event;
   int i;
   event.data.fd=fd;
-  event.events=ev|EPOLLET|EPOLLRDHUP;
+  event.events=ev|EPOLLRDHUP;
   i=epoll_ctl(e_fd,EPOLL_CTL_MOD,fd,&event);
   if(i!=0){
     printf("epoll_mod error #%d:%d\n",e_fd,fd);

@@ -6,7 +6,7 @@ void * thread_process(void *arg){
   int i;
   int e_fd;
   int count;
-  int time_out=-1;//ms
+  int time_out=500;//ms
   struct epoll_event EVENTS[MAXEVENTS];
   float rate_t=0.1;
 #if DEBUG_T

@@ -90,6 +90,16 @@ int send_process(int fd,struct connect_status *cli){
       printf("open file error:%s",cli->file_path);
       return -1;
     }
+
+    i=sendfile(fd,file_fd,NULL,cli->file_stat.st_size);
+    if(i==-1){
+      printf("send file ERROR ##%d\n",errno);
+      close(file_fd);
+      return -1;
+    }
+    close(file_fd);
+
+/*
     char *file_buf;
     file_buf=mmap(NULL,cli->file_stat.st_size,PROT_READ,MAP_PRIVATE,file_fd,0);
     if(file_buf==MAP_FAILED){
@@ -103,7 +113,10 @@ int send_process(int fd,struct connect_status *cli){
     if(i==-10){
       cli->phase=CLOSE_PHASE;
       return -1;
-    }
+      }
+
+*/
+
   }
   i=send_data(fd,"\r\n\r\n\0",strlen("\r\n\r\n\0"));
   if(i==-10){
@@ -231,16 +244,16 @@ int file_type_process(int fd,struct connect_status *cli){
     else if((i=strcasecmp(word,"ico"))==0){
       sprintf(cli->file_type,"%s","image/x-icon");
     }
-    /* else if((i=strcasecmp(word,"js"))==0){
+     else if((i=strcasecmp(word,"js"))==0){
       sprintf(cli->file_type,"%s","application/x-javascript");
       cli->errno_set=1;
-      }*/
+      }
     else if((i=strcasecmp(word,"gif"))==0){
       sprintf(cli->file_type,"%s","image/gif");
-    }/*
+    }
     else if((i=strcasecmp(word,"css"))==0){
       sprintf(cli->file_type,"%s","text/css");
-      }*/
+      }
     else{
       sprintf(cli->file_type,"%s","text/plain");
     }
