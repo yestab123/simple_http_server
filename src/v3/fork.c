@@ -9,16 +9,63 @@ int fork_process(){
   struct epoll_event EVENTS[MAXEVENTS];
   fork_status_init();
   int SERVER_RUN=1;
+  int i;
+  int timeout=10;
   while(SERVER_RUN){
-    if(fork_status.press_rate<status.rate){
+    if(fork_status.press_rate<status->rate){
       if(fork_status.sock_keep==0){
-	
+	i=pthread_mutex_trylock(status->ACCEPT_LOCK);
+	if(i==0)
+	  {
+	    fork_status.sock_keep=1;
+	    epoll_add(epoll_fd,status->sock_fd);
+	  }
       }
     }
     else if(fork_status.sock_keep==1){
-      
+      epoll_del(epoll_fd,status->sock_fd);
+      pthread_mutex_unlock(status->ACCEPT_LOCK);
       fork_status.sock_keep=0;
     }
 
-    
+    int count=epoll_wait(epoll_fd,EVENTS,MAXEVENTS,timeout);
+    for(i=0;i<count;i++)
+      {
+	int fd=EVENTS[i].data.fd;
+	if(1==fork_status.sock_keep)
+	  {
+	    if(fd==(status->sock_fd)){
+	      int connfd=accept(fd,NULL,NULL);
+	      set_non_block(connfd);
+	      epoll_add(epoll_fd,connfd);
+	      fork_status.connect_count++;
+	      connect_init(fd,&cli[connfd]);
+	      continue;
+	    }
+	  }
+	if(EVENTS[i].events & EPOLLRDHUP){
+	  int work_fd=EVENTS[i].data.fd;
+	  epoll_del(epoll_fd,work_fd);
+	  close(work_fd);
+	  fork_status.connect_count--;
+	  cli[work_fd].phase=CLOSE_PHASE;
+	}
+
+	else if(EVENTS[i].events & EPOLLIN)
+	  {
+	    int work_fd=EVENTS[i].data.fd;
+	    send(IN_LIST[1],&work_fd,sizeof(int),0);
+
+	  }
+
+	else if(EVENTS[i].events & EPOLLOUT)
+	  {
+	    int work_fd=EVENTS[i].data.fd;
+	    send(OUT_LIST[1],&work_fd,sizeof(int),0);
+	  }
+      }
+  }
+
+
+}
   
