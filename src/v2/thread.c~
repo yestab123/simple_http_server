@@ -1,9 +1,0 @@
-int thread_init(int num){
-  int i;
-  for(i=0;i<num;i++){
-    pthread_t * p;
-    pthread_create(p,NULL,thread_process,NULL);
-  }
-}
-
-void * thread_process(void *arg){
