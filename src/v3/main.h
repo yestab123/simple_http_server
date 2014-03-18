@@ -17,6 +17,11 @@ struct rpc_t{
   
   int method_i;
   
+  int blank;
+  int rpc_done;
+  int read_set;//recode how buffer already process
+  int mark;//\r\n mark=1;if mark=1 & next with \r\n rpc_done=1;
+  
 };
 
 /*
@@ -54,25 +59,16 @@ struct connect_status {
 };
 
 #define PTHREAD_NUM 4
+#define PROCESS_NUM 4
 struct connect_status cli[65535];
-int sockfd;
-
-
-pthread_mutex_t  accept_lock;
 
 #define HOME_DIR "/Project/web/"
 #define ERR_404_PAGE "/Project/web/404.html"
 #define DEFAULT_PAGE "/index.html"
-
 #define HTTP_SERVER_VERSION "HTTP/1.1"
 
 
-
-#define POINT_U 1
-#define BUFFER_U 2
-
 #define CLOSE -5
-
 #define NON_CONNECT 0
 #define CONNECT_INIT_PHASE 1
 #define ACCEPT_DATA_PHASE 2
@@ -88,3 +84,9 @@ pthread_mutex_t  accept_lock;
 
 
 //#define DEBUG_T 1
+
+
+int set_non_block(int fd);
+int epoll_add(int e_fd,int fd);
+int epoll_del(int e_fd,int fd);
+int epoll_mod(int e_fd,int fd,int ev);
