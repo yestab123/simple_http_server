@@ -1,5 +1,0 @@
-struct ser_status{
-  int connect_count;
-};
-
-struct ser_status status;
