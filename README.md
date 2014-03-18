@@ -12,7 +12,7 @@ Simple Http Server
 
 ###Other Dir:
     /tool/   used to test whether the server is working properly
-    /test/   used to test the feasibility of technology
+    /test/   used to test the feasibility of algorithms
     /web/    the DIR of web page.
     
 ###Each Version Instructions
