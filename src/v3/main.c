@@ -15,17 +15,25 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
+#include <time.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+
 
 #define OK 0
 #define MAXEVENTS 65535
 #define MAXSIZE 1500
 
-#include "file.h"
+
 #include "main.h"
+#include "fork.h"
+#include "log.h"
+#include "log.c"
+#include "fork.c"
 #include "process.c"
 #include "thread.c"
 
-void set_non_block(int fd){
+int set_non_block(int fd){
   int option=fcntl(fd,F_GETFL);
   option=option|O_NONBLOCK;
   fcntl(fd,F_SETFL,option);
@@ -66,13 +74,12 @@ int epoll_mod(int e_fd,int fd,int ev){
 }
 
 int ser_status_init(){
-  status.connect_count=0;
-  status.rate=0.5;
-
+  status->connect_count=0;
+  status->rate=0.5;
   pthread_mutexattr_t mattr;
   pthread_mutexattr_init(&mattr);
   pthread_mutexattr_setpshared(&mattr,PTHREAD_PROCESS_SHARED);
-  pthread_mutex_init(status.ACCEPT_LOCK,&mattr);
+  pthread_mutex_init(status->ACCEPT_LOCK,&mattr);
   
 }
 
@@ -109,9 +116,15 @@ int main(int argc,char **argv){
     }
 
   ser_status_init();
-  
+
+  log_msgid=msgget(IPC_PRIVATE,0666|IPC_CREAT);
+  if(log_msgid<0){
+    printf("log id init err\n");
+    exit(0);
+  }
+
   listen(sock,10);
-  status.sock_fd=sock;
+  status->sock_fd=sock;
   int pid;
   for(i=0;i<PROCESS_NUM;i++){
     pid=fork();
@@ -122,6 +135,7 @@ int main(int argc,char **argv){
     else
       continue;
   }
+  while(1){}
   
 
  child:
