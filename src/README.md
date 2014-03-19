@@ -13,7 +13,11 @@ Each new version is based on the reconstruction of the previous version
 
 ###/src/v3  
         Status:In preparation
-        Progress:70% (30% in Signal,Syn,and load balancing)
+        Progress:99%
+        Problem:1.Too more pthread_mutex(because it use multi process with multi thread,need solve syn)[Next version 
+        try to only use multi process]
+        2.When huge connection comming,it still will shutdown by segmentation fault.
+        3.Signal is being noting in this version.It very complication because of Multi-*.
         Multi process and multi thread model.Big change in I/O processing mode.
         Has same protocol processing module with v2.
 
