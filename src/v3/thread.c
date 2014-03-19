@@ -33,26 +33,39 @@ void * thread_process(void *arg){
 	  if(i==0)
 	    {
 	      cli[fd].phase=DATA_PROCESS_PHASE;
+	      i=method_process(fd,&cli[fd]);
+	      if(-1==i)
+		{
+		  connect_shutdown(fd,&cli[fd]);
+		}
+	      get_process(fd,&cli[fd]);
+	      file_type_process(fd,&cli[fd]);
+	      pack_process(fd,&cli[fd]);
+	      cli[fd].phase=WAIT_SEND_PHASE;
 	    }
 	}
 	break;
-      case DATA_PROCESS_PHASE:
-	i=method_process(fd,&cli[fd]);
-	if(-1==i)
-	  {
-	    connect_shutdown(fd,&cli[fd]);
-	  }
-	get_process(fd,&cli[fd]);
-	file_type_process(fd,&cli[fd]);
-	pack_process(fd,&cli[fd]);
-	cli[fd].phase=WAIT_SEND_PHASE;
-	log_write("DONE",__FILE__,__LINE__,LOG_DEBUG);
-	epoll_mod(epoll_fd,fd,EPOLLIN|EPOLLOUT);
-	break;
       case WAIT_SEND_PHASE:
 	send_process(fd,&cli[fd]);
+	connect_shutdown(fd,&cli[fd]);
 	break;
       }
+    if(cli[fd].phase==ACCEPT_DATA_PHASE){
+      struct add_fd_status a_fd;
+      a_fd.fd=fd;
+      a_fd.ev=EPOLLIN;
+      pthread_mutex_lock(&fork_status.ADD_LOCK);
+      write(fork_status.ADD_FD[1],&a_fd,sizeof(struct add_fd_status));
+      pthread_mutex_unlock(&fork_status.ADD_LOCK);
+    }
+    else if(cli[fd].phase==WAIT_SEND_PHASE){
+      struct add_fd_status a_fd;
+      a_fd.fd=fd;
+      a_fd.ev=EPOLLIN|EPOLLOUT;
+      pthread_mutex_lock(&fork_status.ADD_LOCK);
+      write(fork_status.ADD_FD[1],&a_fd,sizeof(struct add_fd_status));
+      pthread_mutex_unlock(&fork_status.ADD_LOCK);
+    }
   }
 }
 

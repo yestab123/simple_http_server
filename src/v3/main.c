@@ -128,14 +128,14 @@ int main(int argc,char **argv){
   status->sock_fd=sock;
   pthread_t t;
   i=pthread_create(&t,NULL,log_start,NULL);
-   i=3000;
+  /*   i=3000;
   while(i>0){
   log_write("test",__FILE__,__LINE__,LOG_ERROR);
   log_write("test",__FILE__,__LINE__,LOG_MESSAGE);
   //log_write("test",__FILE__,__LINE__,LOG_DEBUG);
   log_write("test",__FILE__,__LINE__,LOG_STATUS);
   i--;
-  }
+  }*/
 #ifndef DEBUG_FORK
   int pid;
   for(i=0;i<PROCESS_NUM;i++){

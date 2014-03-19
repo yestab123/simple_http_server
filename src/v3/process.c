@@ -1,6 +1,6 @@
 int connect_init(int fd,struct connect_status *cli){
   cli->fd=fd;
-  cli->phase=CONNECT_INIT_PHASE;
+  cli->phase=ACCEPT_DATA_PHASE;
   cli->status=404;
   cli->rpc.method=NULL;
   cli->rpc.path=NULL;

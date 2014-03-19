@@ -3,7 +3,8 @@ int fork_status_init(){
   fork_status.press_rate=0.0;
   fork_status.sock_keep=0;
   int i=pipe(fork_status.FD_LIST);
-  if(i!=0)
+  int j=pipe(fork_status.ADD_FD);
+  if(i!=0||j!=0)
     {
       log_write("pipe create error",__FILE__,__LINE__,LOG_ERROR);
     }
@@ -17,7 +18,8 @@ int fork_process(){
   int SERVER_RUN=1;
   int i;
   int timeout=-1;
-
+  set_non_block(fork_status.ADD_FD[0]);
+  epoll_add(epoll_fd,fork_status.ADD_FD[0]);
   while(SERVER_RUN){
     if((fork_status.press_rate)<(status->rate)){
       if(fork_status.sock_keep==0){
@@ -58,10 +60,23 @@ int fork_process(){
 	      int connfd=accept(fd,NULL,NULL);
 	      set_non_block(connfd);
 	      epoll_add(epoll_fd,connfd);
+	      epoll_mod(epoll_fd,connfd,EPOLLIN|EPOLLONESHOT);
 	      fork_status.connect_count++;
 	      connect_init(fd,&cli[connfd]);
 	      continue;
 	    }
+	  }
+	if(fd==fork_status.ADD_FD[0])
+	  {
+	    int i=1;
+	    struct add_fd_status a_fd;
+	    while(i>0)
+	      {
+		i=read(fd,&a_fd,sizeof(struct add_fd_status));
+		//epoll_add(epoll_fd,a_fd.fd);
+		epoll_mod(epoll_fd,a_fd.fd,a_fd.ev|EPOLLONESHOT);
+	      }
+	    continue;
 	  }
 	if(EVENTS[i].events & EPOLLRDHUP){
 	  int work_fd=EVENTS[i].data.fd;
@@ -74,14 +89,16 @@ int fork_process(){
 	else if(EVENTS[i].events & EPOLLIN)
 	  {
 	    int work_fd=EVENTS[i].data.fd;
-	    send(fork_status.FD_LIST[1],&work_fd,sizeof(int),0);
+	    //epoll_del(epoll_fd,work_fd);
+	    write(fork_status.FD_LIST[1],&work_fd,sizeof(int));
 
 	  }
 
 	else if(EVENTS[i].events & EPOLLOUT)
 	  {
 	    int work_fd=EVENTS[i].data.fd;
-	    send(fork_status.FD_LIST[1],&work_fd,sizeof(int),0);
+	    //epoll_del(epoll_fd,work_fd);
+	    write(fork_status.FD_LIST[1],&work_fd,sizeof(int));
 	  }
       }
   }
