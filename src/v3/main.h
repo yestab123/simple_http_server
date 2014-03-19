@@ -1,11 +1,9 @@
 struct ser_status{
   int connect_count;
   float rate;
-
-  int sock_fd;
-  pthread_mutex_t * ACCEPT_LOCK;
-  
   int log_fd;
+  int sock_fd;
+  pthread_mutex_t  ACCEPT_LOCK;
 };
 
 struct ser_status *status;
@@ -84,7 +82,7 @@ struct connect_status cli[65535];
 
 
 //#define DEBUG_T 1
-
+#define DEBUG_FORK 1
 
 int set_non_block(int fd);
 int epoll_add(int e_fd,int fd);

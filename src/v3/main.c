@@ -18,7 +18,7 @@
 #include <time.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-
+#include <signal.h>
 
 #define OK 0
 #define MAXEVENTS 65535
@@ -28,6 +28,7 @@
 #include "main.h"
 #include "fork.h"
 #include "log.h"
+#include "signal.c"
 #include "log.c"
 #include "fork.c"
 #include "process.c"
@@ -79,7 +80,7 @@ int ser_status_init(){
   pthread_mutexattr_t mattr;
   pthread_mutexattr_init(&mattr);
   pthread_mutexattr_setpshared(&mattr,PTHREAD_PROCESS_SHARED);
-  pthread_mutex_init(status->ACCEPT_LOCK,&mattr);
+  pthread_mutex_init(&status->ACCEPT_LOCK,&mattr);
   
 }
 
@@ -125,6 +126,17 @@ int main(int argc,char **argv){
 
   listen(sock,10);
   status->sock_fd=sock;
+  pthread_t t;
+  i=pthread_create(&t,NULL,log_start,NULL);
+   i=3000;
+  while(i>0){
+  log_write("test",__FILE__,__LINE__,LOG_ERROR);
+  log_write("test",__FILE__,__LINE__,LOG_MESSAGE);
+  //log_write("test",__FILE__,__LINE__,LOG_DEBUG);
+  log_write("test",__FILE__,__LINE__,LOG_STATUS);
+  i--;
+  }
+#ifndef DEBUG_FORK
   int pid;
   for(i=0;i<PROCESS_NUM;i++){
     pid=fork();
@@ -136,7 +148,7 @@ int main(int argc,char **argv){
       continue;
   }
   while(1){}
-  
+#endif
 
  child:
   fork_process();

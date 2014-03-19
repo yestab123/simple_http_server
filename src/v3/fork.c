@@ -7,7 +7,6 @@ int fork_status_init(){
     {
       log_write("pipe create error",__FILE__,__LINE__,LOG_ERROR);
     }
-
 }
 
 int fork_process(){
@@ -17,12 +16,12 @@ int fork_process(){
   thread_init(PTHREAD_NUM);
   int SERVER_RUN=1;
   int i;
-  int timeout=10;
+  int timeout=-1;
 
   while(SERVER_RUN){
-    if(fork_status.press_rate<status->rate){
+    if((fork_status.press_rate)<(status->rate)){
       if(fork_status.sock_keep==0){
-	i=pthread_mutex_trylock(status->ACCEPT_LOCK);
+	i=pthread_mutex_trylock(&status->ACCEPT_LOCK);
 	if(i==0)
 	  {
 	    fork_status.sock_keep=1;
@@ -32,11 +31,24 @@ int fork_process(){
     }
     else if(fork_status.sock_keep==1){
       epoll_del(epoll_fd,status->sock_fd);
-      pthread_mutex_unlock(status->ACCEPT_LOCK);
+      pthread_mutex_unlock(&status->ACCEPT_LOCK);
       fork_status.sock_keep=0;
+    }
+    if(fork_status.sock_keep==0 && fork_status.connect_count==0){
+      continue;
     }
 
     int count=epoll_wait(epoll_fd,EVENTS,MAXEVENTS,timeout);
+    if(count<0){
+      if(errno==EINTR)
+	{
+	  continue;
+	}
+      else{
+	log_write("epoll_wait return -1",__FILE__,__LINE__,LOG_ERROR);
+	exit(0);
+      }
+    }
     for(i=0;i<count;i++)
       {
 	int fd=EVENTS[i].data.fd;

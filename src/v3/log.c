@@ -4,8 +4,8 @@ int log_write(char * log,char *file,int line,int level){
   char time_now[30];
   int i;
   time(&now);
-  strftime(time_now,30,"%Y%m%d_%H%M",localtime(&now));
-  if(level==LOG_ERROR){
+  strftime(time_now,30,"%Y%m%d_%H:%M",localtime(&now));
+  if(level!=LOG_ERROR){
     sprintf(buff.buf,"%s - %s \n",time_now,log);
   }
   else{
@@ -46,10 +46,10 @@ int log_file_record(){
       strftime(time_name,100,"%Y%m%d_%H%M",localtime(&now));
       sprintf(new_name,"dump_%s.log",time_name);
       i=rename(DUMP_LOG_FILE,new_name);
-      if(i!=0)
-	{
-	  dump_fd=open(DUMP_LOG_FILE,O_RDWR|O_CREAT|O_TRUNC|O_APPEND);
-	}
+     
+	
+      dump_fd=open(DUMP_LOG_FILE,O_RDWR|O_CREAT|O_TRUNC|O_APPEND);
+	
     }
     else{
       dump_fd=open(DUMP_LOG_FILE,O_RDWR|O_APPEND);
@@ -59,7 +59,7 @@ int log_file_record(){
   i=stat(STATUS_LOG_FILE,&status_stat);
   if(i!=0){
     status_fd=open(STATUS_LOG_FILE,O_RDWR|O_CREAT|O_EXCL|O_APPEND);
-    if(dump_fd<0)
+    if(status_fd<0)
       {
 	printf("status_file create error!#\n");
 	exit(0);
@@ -72,15 +72,12 @@ int log_file_record(){
       time_t now;
       time(&now);
       strftime(time_name,100,"%Y%m%d_%H%M",localtime(&now));
-      sprintf(new_name,"dump_%s.log",time_name);
+      sprintf(new_name,"status_%s.log",time_name);
       i=rename(STATUS_LOG_FILE,new_name);
-      if(i!=0)
-	{
-	  status_fd=open(STATUS_LOG_FILE,O_RDWR|O_CREAT|O_TRUNC|O_APPEND);
-	}
+      status_fd=open(STATUS_LOG_FILE,O_RDWR|O_CREAT|O_TRUNC|O_APPEND);
     }
     else{
-      dump_fd=open(DUMP_LOG_FILE,O_RDWR|O_APPEND);
+      status_fd=open(STATUS_LOG_FILE,O_RDWR|O_APPEND);
     }
   }
 
@@ -89,13 +86,13 @@ int log_file_record(){
     int k;
     k=msgrcv(log_msgid,&buff,sizeof(struct log_buf),0,0);
     if(buff.level==LOG_DEBUG){
-      printf("%s\n",buff.buf);
-    }
-    else if(buff.level==LOG_MESSAGE || buff.level==LOG_STATUS){
-      write(status_fd,buff.buf,buff.size);
+      printf("%s",buff.buf);
     }
     else if(buff.level==LOG_ERROR){
       write(dump_fd,buff.buf,buff.size);
+    }
+    else{
+      write(status_fd,buff.buf,buff.size);
     }
   }
   close(dump_fd);

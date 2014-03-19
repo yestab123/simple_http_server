@@ -46,6 +46,7 @@ void * thread_process(void *arg){
 	file_type_process(fd,&cli[fd]);
 	pack_process(fd,&cli[fd]);
 	cli[fd].phase=WAIT_SEND_PHASE;
+	log_write("DONE",__FILE__,__LINE__,LOG_DEBUG);
 	epoll_mod(epoll_fd,fd,EPOLLIN|EPOLLOUT);
 	break;
       case WAIT_SEND_PHASE:
@@ -70,3 +71,6 @@ int thread_init(int num){
   }
 }
 
+void *log_start(void *arg){
+  log_file_record();
+}
