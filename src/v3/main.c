@@ -48,7 +48,7 @@ int epoll_add(int e_fd,int fd){
   i=epoll_ctl(e_fd,EPOLL_CTL_ADD,fd,&event);
   if(i!=0)
     {
-      printf("epoll_add error #%d\n",e_fd);
+      log_write("epoll_add#ERROR",__FILE__,__LINE__,LOG_ERROR);
     }
   return OK;
 }
@@ -57,7 +57,7 @@ int epoll_del(int e_fd,int fd){
   int i;
   i=epoll_ctl(e_fd,EPOLL_CTL_DEL,fd,0);
   if(i!=0){
-    printf("epoll_del error #%d\n",e_fd);
+    log_write("epoll_del#ERROR",__FILE__,__LINE__,LOG_ERROR);
   }
   return OK;
 }
@@ -69,7 +69,7 @@ int epoll_mod(int e_fd,int fd,int ev){
   event.events=ev|EPOLLET|EPOLLRDHUP;
   i=epoll_ctl(e_fd,EPOLL_CTL_MOD,fd,&event);
   if(i!=0){
-    printf("epoll_mod error #%d:%d\n",e_fd,fd);
+    log_write("epoll_mod#ERROR",__FILE__,__LINE__,LOG_ERROR);
   }
   return OK;
 }
@@ -107,7 +107,9 @@ int main(int argc,char **argv){
   }
   //  sleep(15);
   set_non_block(sock);
-  
+  signal_add(SIGPIPE);
+  signal_add(SIGHUP);
+  signal_add(SIGURG);
   
   status=(struct ser_status *)mmap(NULL,sizeof(struct ser_status),PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS,-1,0);
   if(status==MAP_FAILED)

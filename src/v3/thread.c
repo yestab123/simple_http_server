@@ -1,14 +1,17 @@
 
 void connect_shutdown(int fd,struct connect_status *cli){
   cli->phase=CLOSE_PHASE;
-  fork_status.connect_count--;
   shutdown(fd,SHUT_RDWR);
+  pthread_mutex_lock(&fork_status.COUNT_LOCK);
+  fork_status.connect_count--;
+  pthread_mutex_unlock(&fork_status.COUNT_LOCK);
 }
 
 void * thread_process(void *arg){
   int i;
   int RUNNING=1;
   int fd;
+  int k;
   while(RUNNING){
     i=pthread_mutex_lock(&fork_status.FD_LOCK);
     if(i!=0)
@@ -46,9 +49,9 @@ void * thread_process(void *arg){
 	}
 	break;
       case WAIT_SEND_PHASE:
-	send_process(fd,&cli[fd]);
+	k=send_process(fd,&cli[fd]);
 	connect_shutdown(fd,&cli[fd]);
-	break;
+	  break;
       }
     if(cli[fd].phase==ACCEPT_DATA_PHASE){
       struct add_fd_status a_fd;

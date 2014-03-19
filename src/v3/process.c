@@ -81,7 +81,7 @@ int send_process(int fd,struct connect_status *cli){
   i=send_data(fd,cli->send,strlen(cli->send));
   if(i==-10){
     cli->phase=CLOSE_PHASE;
-    return -1;
+    return -10;
   }
   if(cli->errno_set==1){
     return -1;
@@ -95,7 +95,7 @@ int send_process(int fd,struct connect_status *cli){
 
     i=sendfile(fd,file_fd,NULL,cli->file_stat.st_size);
     if(i==-1){
-      printf("send file ERROR ##%d\n",errno);
+      log_write("sendfile#ERROR",__FILE__,__LINE__,LOG_ERROR);
       close(file_fd);
       return -1;
     }
@@ -123,7 +123,7 @@ int send_process(int fd,struct connect_status *cli){
   i=send_data(fd,"\r\n\r\n\0",strlen("\r\n\r\n\0"));
   if(i==-10){
     cli->phase=CLOSE_PHASE;
-    return -1;
+    return -10;
   }
   return OK;
   
@@ -197,9 +197,7 @@ int process(int fd,struct connect_status *cli){
 
 int method_process(int fd,struct connect_status *cli){
   int i;
-#if DEBUG_T
-  printf("method_process\n");
-#endif
+
   if((i=strcmp(cli->rpc.method,"GET"))==0){
     cli->rpc.method_i=METHOD_GET;
   }
@@ -211,7 +209,7 @@ int method_process(int fd,struct connect_status *cli){
   }
   else{
     return -1;
-    printf("#%d,METHOD_PROCESS ERROR",fd);
+    log_write("Method_process#ERROR",__FILE__,__LINE__,LOG_ERROR);
   }
   return 0;
 }
@@ -257,14 +255,14 @@ int file_type_process(int fd,struct connect_status *cli){
   char *word;
   int i;
   int j;
-  printf("file_type_process:%s\n",cli->file_path);
+
   word=strrchr(cli->file_path,'.');
   if(word==NULL){
-    printf("word is NULL\n");
+
     sprintf(cli->file_type,"%s","text/plain");
   }else{
     word++;
-    printf("word:%s\n",word);
+
     if((i=strcasecmp(word,"jpg"))==0){
       sprintf(cli->file_type,"%s","image/jpeg");
     }
