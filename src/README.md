@@ -4,11 +4,11 @@ Each new version is based on the reconstruction of the previous version
 
 ###/src/v1
         Status:Finish
-        Single thread processing.The most simple HTTP protocol processing module. 
+        Multic thread processing (main thread(father) handle accept).The most simple HTTP protocol processing module. 
 
 ###/src/v2
         Status:Finish
-        Multi thread processing and it can deal with thousands of connection same time.
+        Multi thread processing (child thread handle accept) and it can deal with thousands of connection same time.
         It has a update protocol processing module.
 
 ###/src/v3  
