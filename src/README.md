@@ -1,6 +1,6 @@
 Each version of the HTTP server description
 ==================================
-BeBe_Http_Sever是不断通过重构来更新换代。
+BeBe_Http_Sever是不断通过重构来更新换代。【当前主要专注于服务器的高性能处理，所以目前的几个版本主要是对连接处理能力进行重构，对请求的逻辑处理（CGI等）会放到以后的版本才进行改进】
 
 ###/src/v1
         Status:Finish
