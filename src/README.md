@@ -1,26 +1,25 @@
 Each version of the HTTP server description
 ==================================
-Each new version is based on the reconstruction of the previous version
+BeBe_Http_Sever是不断通过重构来更新换代。【当前主要专注于服务器的高性能处理，所以目前的几个版本主要是对连接处理能力进行重构，对请求的逻辑处理（CGI等）会放到以后的版本才进行改进】
 
 ###/src/v1
         Status:Finish
-        Multic thread processing (main thread(father) handle accept).The most simple HTTP protocol processing module. 
+        多线程处理模式，由主线程负责建立新连接accept，之后通过管道发送连接的socket_fd，子线程通过获取锁来提取fd进行处理。请求处理模块逻辑比较简单，容易出错。
 
 ###/src/v2
         Status:Finish
-        Multi thread processing (child thread handle accept) and it can deal with thousands of connection same time.
-        It has a update protocol processing module.
+        多线程处理模式，由各个子线程通过锁来持有监听socket，根据持有数量判断是否释放监听socket。主线程暂时作空转处理。
+        请求处理模块全面重构，支持文件类型判断等。
+        服务器软件与测试软件Webbench同机测试可达到10K连接量。
 
 ###/src/v3  
-        Status:In preparation
-        Progress:99%
-        Problem:1.Too more pthread_mutex(because it use multi process with multi thread,need solve syn)[Next version 
-        try to only use multi process]
-        2.When huge connection comming,it still will shutdown by segmentation fault.
-        3.Signal is being noting in this version.It very complication because of Multi-*.
-        Multi process and multi thread model.Big change in I/O processing mode.
-        Has same protocol processing module with v2.
+        Status:Finish
+        采用多进程+多线程模型，各个子进程根据持有时间和新连接数量判断是否释放监听socket；每个子进程持有一个线程池，子线程负责对连接事件进行处理；主线程负责监听所有连接的事件发生和监听socket是否有新连接接入。
+        与版本2采用相同的请求处理模块，稍微作了部分更新。
+        读入与写出采用模块化，减少对运行状态依赖性。
+        程序编译运行后比以前的版本处理能力稍微下降，可能发生在采用了多进程+多线程，比上两个版本增加了一倍的锁数量，浪费大量的时间在锁处理上。
 
 ###/src/v4  
-        Status:planning
-        Hope to add CGI and cache
+        Status:programming
+        参照Nginx服务器，采用多进程+Reactor模式对连接进行处理。考虑增设内存池。
+        
